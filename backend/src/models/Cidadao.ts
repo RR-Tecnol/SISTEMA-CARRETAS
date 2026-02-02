@@ -10,6 +10,7 @@ export interface CidadaoAttributes {
     telefone: string;
     email: string;
     senha?: string;
+    tipo?: string;
     municipio: string;
     estado: string;
     cep?: string;
@@ -17,6 +18,8 @@ export interface CidadaoAttributes {
     numero?: string;
     complemento?: string;
     bairro?: string;
+    consentimento_lgpd?: boolean;
+    data_consentimento?: Date;
     ip_consentimento?: string;
     reset_password_token?: string | null;
     reset_password_expires?: Date | null;
@@ -31,6 +34,7 @@ export class Cidadao extends Model<CidadaoAttributes> implements CidadaoAttribut
     public telefone!: string;
     public email!: string;
     public senha?: string;
+    public tipo?: string;
     public municipio!: string;
     public estado!: string;
     public cep?: string;
@@ -91,6 +95,11 @@ Cidadao.init(
         senha: {
             type: DataTypes.STRING,
             allowNull: true,
+        },
+        tipo: {
+            type: DataTypes.STRING(20),
+            allowNull: true,
+            defaultValue: 'cidadao',
         },
         municipio: {
             type: DataTypes.STRING,

@@ -106,9 +106,8 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response)
         }
 
         // Generate JWT token
-        // Check if user is admin (based on email or custom field)
-        const isAdmin = cidadao.email === 'admin@sistemacarretas.com.br' ||
-            (cidadao.campos_customizados as any)?.tipo_usuario === 'admin';
+        // Check if user is admin (based on tipo field in database)
+        const isAdmin = cidadao.tipo === 'admin';
 
         const token = generateToken({
             id: cidadao.id,
