@@ -1,0 +1,175 @@
+// Import all models
+import { Instituicao } from './Instituicao';
+import { CursoExame } from './CursoExame';
+import { Acao } from './Acao';
+import { AcaoCursoExame } from './AcaoCursoExame';
+import { Cidadao } from './Cidadao';
+import { Inscricao } from './Inscricao';
+import { Notificacao } from './Notificacao';
+import { Noticia } from './Noticia';
+import { ConfiguracaoCampo } from './ConfiguracaoCampo';
+import { Caminhao } from './Caminhao';
+import { Funcionario } from './Funcionario';
+import { AcaoCaminhao } from './AcaoCaminhao';
+import { AcaoFuncionario } from './AcaoFuncionario';
+import { Abastecimento } from './Abastecimento';
+
+// Define associations
+export function setupAssociations(): void {
+    // Instituicao <-> Acao (1:N)
+    Instituicao.hasMany(Acao, {
+        foreignKey: 'instituicao_id',
+        as: 'acoes',
+    });
+    Acao.belongsTo(Instituicao, {
+        foreignKey: 'instituicao_id',
+        as: 'instituicao',
+    });
+
+    // Acao <-> AcaoCursoExame (1:N)
+    Acao.hasMany(AcaoCursoExame, {
+        foreignKey: 'acao_id',
+        as: 'cursos_exames',
+    });
+    AcaoCursoExame.belongsTo(Acao, {
+        foreignKey: 'acao_id',
+        as: 'acao',
+    });
+
+    // CursoExame <-> AcaoCursoExame (1:N)
+    CursoExame.hasMany(AcaoCursoExame, {
+        foreignKey: 'curso_exame_id',
+        as: 'acoes',
+    });
+    AcaoCursoExame.belongsTo(CursoExame, {
+        foreignKey: 'curso_exame_id',
+        as: 'curso_exame',
+    });
+
+    // Acao <-> CursoExame (N:M through AcaoCursoExame)
+    Acao.belongsToMany(CursoExame, {
+        through: AcaoCursoExame,
+        foreignKey: 'acao_id',
+        otherKey: 'curso_exame_id',
+        as: 'cursos',
+    });
+    CursoExame.belongsToMany(Acao, {
+        through: AcaoCursoExame,
+        foreignKey: 'curso_exame_id',
+        otherKey: 'acao_id',
+        as: 'acoesVinculadas',
+    });
+
+    // Cidadao <-> Inscricao (1:N)
+    Cidadao.hasMany(Inscricao, {
+        foreignKey: 'cidadao_id',
+        as: 'inscricoes',
+    });
+    Inscricao.belongsTo(Cidadao, {
+        foreignKey: 'cidadao_id',
+        as: 'cidadao',
+    });
+
+    // AcaoCursoExame <-> Inscricao (1:N)
+    AcaoCursoExame.hasMany(Inscricao, {
+        foreignKey: 'acao_curso_id',
+        as: 'inscricoes',
+    });
+    Inscricao.belongsTo(AcaoCursoExame, {
+        foreignKey: 'acao_curso_id',
+        as: 'acao_curso',
+    });
+
+    // Acao <-> Notificacao (1:N)
+    Acao.hasMany(Notificacao, {
+        foreignKey: 'acao_id',
+        as: 'notificacoes',
+    });
+    Notificacao.belongsTo(Acao, {
+        foreignKey: 'acao_id',
+        as: 'acao',
+    });
+
+    // Acao <-> Noticia (1:N)
+    Acao.hasMany(Noticia, {
+        foreignKey: 'acao_id',
+        as: 'noticias',
+    });
+    Noticia.belongsTo(Acao, {
+        foreignKey: 'acao_id',
+        as: 'acao',
+    });
+
+    // Acao <-> Caminhao (N:M through AcaoCaminhao)
+    Acao.belongsToMany(Caminhao, {
+        through: AcaoCaminhao,
+        foreignKey: 'acao_id',
+        otherKey: 'caminhao_id',
+        as: 'caminhoes',
+    });
+    Caminhao.belongsToMany(Acao, {
+        through: AcaoCaminhao,
+        foreignKey: 'caminhao_id',
+        otherKey: 'acao_id',
+        as: 'acoes',
+    });
+
+    // Acao <-> Funcionario (N:M through AcaoFuncionario)
+    Acao.belongsToMany(Funcionario, {
+        through: AcaoFuncionario,
+        foreignKey: 'acao_id',
+        otherKey: 'funcionario_id',
+        as: 'funcionarios',
+    });
+    Funcionario.belongsToMany(Acao, {
+        through: AcaoFuncionario,
+        foreignKey: 'funcionario_id',
+        otherKey: 'acao_id',
+        as: 'acoes',
+    });
+
+    // AcaoFuncionario <-> Funcionario (N:1)
+    AcaoFuncionario.belongsTo(Funcionario, {
+        foreignKey: 'funcionario_id',
+        as: 'funcionario',
+    });
+
+    // Acao <-> Abastecimento (1:N)
+    Acao.hasMany(Abastecimento, {
+        foreignKey: 'acao_id',
+        as: 'abastecimentos',
+    });
+    Abastecimento.belongsTo(Acao, {
+        foreignKey: 'acao_id',
+        as: 'acao',
+    });
+
+    // Caminhao <-> Abastecimento (1:N)
+    Caminhao.hasMany(Abastecimento, {
+        foreignKey: 'caminhao_id',
+        as: 'abastecimentos',
+    });
+    Abastecimento.belongsTo(Caminhao, {
+        foreignKey: 'caminhao_id',
+        as: 'caminhao',
+    });
+}
+
+// Export all models
+export {
+    Instituicao,
+    CursoExame,
+    Acao,
+    AcaoCursoExame,
+    Cidadao,
+    Inscricao,
+    Notificacao,
+    Noticia,
+    ConfiguracaoCampo,
+    Caminhao,
+    Funcionario,
+    AcaoCaminhao,
+    AcaoFuncionario,
+    Abastecimento,
+};
+
