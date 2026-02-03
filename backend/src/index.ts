@@ -42,7 +42,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: config.env === 'development' ? 1000 : 100, // Higher limit for development
+    max: config.env === 'development' ? 1000 : 3000, // Increased limit to support Dashboard N+1 fetching
     message: 'Muitas requisições deste IP, tente novamente em 15 minutos',
 });
 app.use('/api/', limiter);
