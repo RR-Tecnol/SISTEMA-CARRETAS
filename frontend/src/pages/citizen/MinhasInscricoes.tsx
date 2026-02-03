@@ -23,8 +23,9 @@ const MinhasInscricoes: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'confirmado': return 'success';
-            case 'inscrito': return 'primary';
+            case 'atendido': return 'success';
+            case 'pendente': return 'primary';
+            case 'faltou': return 'warning';
             case 'cancelado': return 'error';
             default: return 'default';
         }

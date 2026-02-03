@@ -10,8 +10,16 @@ const caminhaoSchema = Joi.object({
     placa: Joi.string().max(10).required(),
     modelo: Joi.string().required(),
     ano: Joi.number().integer().min(1900).max(new Date().getFullYear() + 1).required(),
-    capacidade_atendimento: Joi.number().integer().min(0).required(),
     autonomia_km_litro: Joi.number().precision(2).min(0).required(),
+    status: Joi.string().valid('disponivel', 'em_manutencao', 'em_acao').optional(),
+});
+
+// Schema para atualização - todos os campos opcionais
+const updateCaminhaoSchema = Joi.object({
+    placa: Joi.string().max(10).optional(),
+    modelo: Joi.string().optional(),
+    ano: Joi.number().integer().min(1900).max(new Date().getFullYear() + 1).optional(),
+    autonomia_km_litro: Joi.number().precision(2).min(0).optional(),
     status: Joi.string().valid('disponivel', 'em_manutencao', 'em_acao').optional(),
 });
 
@@ -19,7 +27,8 @@ router.get('/', authenticate, authorizeAdmin, async (_req: Request, res: Respons
     try {
         const caminhoes = await Caminhao.findAll({ order: [['modelo', 'ASC']] });
         res.json(caminhoes);
-    } catch (error) {
+    } catch (error: any) {
+        console.error('❌ ERRO GET CAMINHOES:', error);
         res.status(500).json({ error: 'Erro ao buscar caminhões' });
     }
 });
@@ -37,7 +46,7 @@ router.post('/', authenticate, authorizeAdmin, validate(caminhaoSchema), async (
     }
 });
 
-router.put('/:id', authenticate, authorizeAdmin, validate(caminhaoSchema), async (req: Request, res: Response) => {
+router.put('/:id', authenticate, authorizeAdmin, validate(updateCaminhaoSchema), async (req: Request, res: Response) => {
     try {
         const caminhao = await Caminhao.findByPk(req.params.id);
         if (!caminhao) {

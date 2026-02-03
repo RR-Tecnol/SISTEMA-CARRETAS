@@ -1,6 +1,5 @@
 import { Model, DataTypes, UUIDV4 } from 'sequelize';
 import { sequelize } from '../config/database';
-import { encrypt, decrypt } from '../utils/encryption';
 
 export interface CidadaoAttributes {
     id?: string;
@@ -52,16 +51,6 @@ export class Cidadao extends Model<CidadaoAttributes> implements CidadaoAttribut
 
     public readonly created_at!: Date;
     public readonly updated_at!: Date;
-
-    // Método para obter CPF descriptografado
-    public getCPFDecrypted(): string {
-        return decrypt(this.cpf);
-    }
-
-    // Método para definir CPF criptografado
-    public setCPFEncrypted(cpf: string): void {
-        this.cpf = encrypt(cpf);
-    }
 }
 
 Cidadao.init(
@@ -72,7 +61,7 @@ Cidadao.init(
             primaryKey: true,
         },
         cpf: {
-            type: DataTypes.STRING,
+            type: DataTypes.STRING(14),  // Formato: 123.456.789-09
             allowNull: false,
             unique: true,
         },
@@ -165,6 +154,8 @@ Cidadao.init(
         sequelize,
         tableName: 'cidadaos',
         timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
         underscored: true,
     }
 );

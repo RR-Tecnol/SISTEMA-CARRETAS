@@ -15,7 +15,7 @@ const router = Router();
 router.get('/', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const inscricoes = await Inscricao.findAll({
-            attributes: ['id', 'cidadao_id', 'acao_curso_id', 'status', 'compareceu', 'created_at'],
+            attributes: ['id', 'cidadao_id', 'acao_id', 'curso_exame_id', 'status', 'created_at'],
             order: [['created_at', 'DESC']],
         });
 
@@ -33,22 +33,27 @@ router.get('/', authenticate, authorizeAdmin, async (req: Request, res: Response
  */
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     try {
+        // Agora recebemos acao_curso_id do frontend (ID da tabela pivô), mas salvamos acao_id e curso_exame_id
         const { acao_curso_id } = req.body;
         const cidadao_id = req.user!.id;
 
-        // Check if acao_curso exists and has vagas
+        // Buscar detalhes da relação Acao-Curso para decompor IDs
         const acaoCurso = await AcaoCursoExame.findByPk(acao_curso_id);
         if (!acaoCurso) {
             res.status(404).json({ error: 'Curso/Exame não encontrado nesta ação' });
             return;
         }
 
+        // Decompor IDs
+        const { acao_id, curso_exame_id, vagas } = acaoCurso;
+
         // Check for existing inscricao
         const existingInscricao = await Inscricao.findOne({
             where: {
                 cidadao_id,
-                acao_curso_id,
-                status: ['inscrito', 'confirmado'],
+                acao_id,
+                curso_exame_id,
+                status: ['pendente', 'atendido'],
             },
         });
 
@@ -60,12 +65,13 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
         // Check vagas disponíveis
         const inscricoesCount = await Inscricao.count({
             where: {
-                acao_curso_id,
-                status: ['inscrito', 'confirmado'],
+                acao_id,
+                curso_exame_id,
+                status: ['pendente', 'atendido'],
             },
         });
 
-        if (inscricoesCount >= acaoCurso.vagas) {
+        if (inscricoesCount >= vagas) {
             res.status(400).json({ error: 'Não há vagas disponíveis' });
             return;
         }
@@ -73,8 +79,9 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
         // Create inscricao
         const inscricao = await Inscricao.create({
             cidadao_id,
-            acao_curso_id,
-            status: 'inscrito' as any,
+            acao_id,
+            curso_exame_id,
+            status: 'pendente',
             data_inscricao: new Date(),
         });
 
@@ -100,27 +107,21 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
             where: { cidadao_id },
             include: [
                 {
-                    model: AcaoCursoExame,
-                    as: 'acao_curso',
-                    include: [
-                        {
-                            model: Acao,
-                            as: 'acao',
-                        },
-                        {
-                            model: CursoExame,
-                            as: 'curso_exame',
-                        },
-                    ],
+                    model: Acao,
+                    as: 'acao',
                 },
+                {
+                    model: CursoExame,
+                    as: 'curso_exame',
+                }
             ],
             order: [['created_at', 'DESC']],
         });
 
         res.json(inscricoes);
     } catch (error) {
-        console.error('Error fetching inscricoes:', error);
-        res.status(500).json({ error: 'Erro ao buscar inscrições' });
+        console.error('Error fetching my inscricoes:', error);
+        res.status(500).json({ error: 'Erro ao buscar suas inscrições' });
     }
 });
 
@@ -140,8 +141,8 @@ router.put('/:id/presenca', authenticate, authorizeAdmin, async (req: Request, r
         }
 
         await inscricao.update({
-            compareceu,
-            status: compareceu ? ('confirmado' as any) : inscricao.status,
+            status: compareceu ? 'atendido' : 'pendente',
+            observacoes: compareceu ? 'Presença confirmada' : 'Ausente',
         });
 
         res.json({
@@ -163,6 +164,7 @@ router.get('/acoes/:acaoId/inscricoes', authenticate, authorizeAdmin, async (req
         const { acaoId } = req.params;
 
         const inscricoes = await Inscricao.findAll({
+            where: { acao_id: acaoId }, // Busca direta pela acao_id
             include: [
                 {
                     model: Cidadao,
@@ -170,39 +172,29 @@ router.get('/acoes/:acaoId/inscricoes', authenticate, authorizeAdmin, async (req
                     attributes: ['id', 'nome_completo', 'cpf', 'email', 'telefone'],
                 },
                 {
-                    model: AcaoCursoExame,
-                    as: 'acao_curso',
-                    where: { acao_id: acaoId },
-                    include: [
-                        {
-                            model: CursoExame,
-                            as: 'curso_exame',
-                        },
-                    ],
+                    model: CursoExame,
+                    as: 'curso_exame',
                 },
             ],
             order: [['created_at', 'DESC']],
         });
 
-        // Função para formatar CPF
+        // Função para formatar CPF e return
         const formatCPF = (cpf: string): string => {
             const cleaned = cpf.replace(/\D/g, '');
             if (cleaned.length !== 11) return cpf;
             return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
         };
 
-        // Descriptografar e formatar CPF antes de retornar
-        const inscricoesComCPFDecrypted = inscricoes.map(inscricao => {
+        const inscricoesMapped = inscricoes.map(inscricao => {
             const inscricaoJSON = inscricao.toJSON() as any;
             if (inscricaoJSON.cidadao && inscricaoJSON.cidadao.cpf) {
-                const cidadaoInstance = inscricao.get('cidadao') as Cidadao;
-                const cpfDecrypted = cidadaoInstance.getCPFDecrypted();
-                inscricaoJSON.cidadao.cpf = formatCPF(cpfDecrypted);
+                inscricaoJSON.cidadao.cpf = formatCPF(inscricaoJSON.cidadao.cpf);
             }
             return inscricaoJSON;
         });
 
-        res.json(inscricoesComCPFDecrypted);
+        res.json(inscricoesMapped);
     } catch (error) {
         console.error('Error fetching inscricoes:', error);
         res.status(500).json({ error: 'Erro ao buscar inscrições' });
@@ -211,14 +203,14 @@ router.get('/acoes/:acaoId/inscricoes', authenticate, authorizeAdmin, async (req
 
 /**
  * POST /api/acoes/:acaoId/inscricoes
- * Adicionar cidadão a uma ação (admin) - pode ser cadastro espontâneo
+ * Adicionar cidadão a uma ação manual (admin)
  */
 router.post('/acoes/:acaoId/inscricoes', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const { acaoId } = req.params;
         const { cidadao_id, acao_curso_id, cadastro_espontaneo = false } = req.body;
 
-        // Check if acao_curso exists
+        // Buscar detalhes para obter curso_exame_id
         const acaoCurso = await AcaoCursoExame.findOne({
             where: {
                 id: acao_curso_id,
@@ -231,11 +223,14 @@ router.post('/acoes/:acaoId/inscricoes', authenticate, authorizeAdmin, async (re
             return;
         }
 
+        const { curso_exame_id } = acaoCurso;
+
         // Check for existing inscricao
         const existingInscricao = await Inscricao.findOne({
             where: {
                 cidadao_id,
-                acao_curso_id,
+                acao_id: acaoId,
+                curso_exame_id,
             },
         });
 
@@ -247,10 +242,11 @@ router.post('/acoes/:acaoId/inscricoes', authenticate, authorizeAdmin, async (re
         // Create inscricao
         const inscricao = await Inscricao.create({
             cidadao_id,
-            acao_curso_id,
-            status: 'inscrito' as any,
+            acao_id: acaoId,
+            curso_exame_id,
+            status: 'pendente',
             data_inscricao: new Date(),
-            cadastro_espontaneo,
+            observacoes: cadastro_espontaneo ? 'Cadastro Espontâneo' : null,
         });
 
         res.status(201).json({
@@ -278,8 +274,7 @@ router.put('/:id/confirmar', authenticate, authorizeAdmin, async (req: Request, 
         }
 
         await inscricao.update({
-            status: 'confirmado' as any,
-            data_confirmacao: new Date(),
+            observacoes: inscricao.observacoes ? `${inscricao.observacoes}; Confirmado` : 'Confirmado',
         });
 
         res.json({
@@ -308,10 +303,8 @@ router.put('/:id/marcar-atendimento', authenticate, authorizeAdmin, async (req: 
         }
 
         await inscricao.update({
-            status: 'concluido' as any,
-            compareceu: true,
-            data_atendimento: new Date(),
-            observacoes: observacoes || inscricao.observacoes,
+            status: 'atendido', // SUCESSO
+            observacoes: observacoes ? `Atendido - ${observacoes}` : 'Atendido',
         });
 
         res.json({
@@ -331,20 +324,13 @@ router.put('/:id/marcar-atendimento', authenticate, authorizeAdmin, async (req: 
 router.delete('/:id', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-
         const inscricao = await Inscricao.findByPk(id);
         if (!inscricao) {
             res.status(404).json({ error: 'Inscrição não encontrada' });
             return;
         }
-
-        await inscricao.update({
-            status: 'cancelado',
-        });
-
-        res.json({
-            message: 'Inscrição cancelada com sucesso',
-        });
+        await inscricao.destroy(); // Hard delete para cancelamento pois status 'cancelado' nao existe
+        res.json({ message: 'Inscrição cancelada com sucesso' });
     } catch (error) {
         console.error('Error canceling inscricao:', error);
         res.status(500).json({ error: 'Erro ao cancelar inscrição' });
@@ -371,26 +357,8 @@ router.put('/:id/status', authenticate, authorizeAdmin, async (req: Request, res
             return;
         }
 
-        // Mapear status para campos do banco
-        switch (status) {
-            case 'atendido':
-                inscricao.status = 'confirmado' as any;
-                inscricao.compareceu = true;
-                inscricao.data_atendimento = new Date();
-                break;
-            case 'faltou':
-                inscricao.status = 'inscrito' as any;
-                inscricao.compareceu = false;
-                break;
-            case 'pendente':
-            default:
-                inscricao.status = 'inscrito' as any;
-                (inscricao as any).compareceu = null;
-                (inscricao as any).data_atendimento = null;
-                break;
-        }
+        await inscricao.update({ status });
 
-        await inscricao.save();
         res.json(inscricao);
     } catch (error) {
         console.error('Error updating inscription status:', error);

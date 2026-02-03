@@ -1,19 +1,15 @@
 import { Model, DataTypes, UUIDV4 } from 'sequelize';
 import { sequelize } from '../config/database';
 
-export type InscricaoStatus = 'inscrito' | 'confirmado' | 'concluido' | 'cancelado';
+export type InscricaoStatus = 'pendente' | 'atendido' | 'faltou' | 'cancelado';
 
 export interface InscricaoAttributes {
     id?: string;
     cidadao_id: string;
-    acao_curso_id: string;
-    status: InscricaoStatus;
+    acao_id: string;
+    curso_exame_id?: string;
+    status: 'pendente' | 'atendido' | 'faltou';
     data_inscricao: Date;
-    data_confirmacao?: Date;
-    data_atendimento?: Date;
-    compareceu?: boolean;
-    cadastro_espontaneo?: boolean;
-    nota_final?: number;
     observacoes?: string;
     campos_customizados?: Record<string, any>;
 }
@@ -21,14 +17,10 @@ export interface InscricaoAttributes {
 export class Inscricao extends Model<InscricaoAttributes> implements InscricaoAttributes {
     public id!: string;
     public cidadao_id!: string;
-    public acao_curso_id!: string;
-    public status!: InscricaoStatus;
+    public acao_id!: string;
+    public curso_exame_id?: string;
+    public status!: 'pendente' | 'atendido' | 'faltou';
     public data_inscricao!: Date;
-    public data_confirmacao?: Date;
-    public data_atendimento?: Date;
-    public compareceu?: boolean;
-    public cadastro_espontaneo?: boolean;
-    public nota_final?: number;
     public observacoes?: string;
     public campos_customizados?: Record<string, any>;
 
@@ -51,44 +43,34 @@ Inscricao.init(
                 key: 'id',
             },
         },
-        acao_curso_id: {
+        acao_id: {
             type: DataTypes.UUID,
             allowNull: false,
             references: {
-                model: 'acao_curso_exame',
+                model: 'acoes',
+                key: 'id',
+            },
+        },
+        curso_exame_id: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            references: {
+                model: 'cursos_exames',
                 key: 'id',
             },
         },
         status: {
-            type: DataTypes.ENUM('inscrito', 'confirmado', 'concluido', 'cancelado'),
+            type: DataTypes.STRING,
             allowNull: false,
-            defaultValue: 'inscrito',
+            defaultValue: 'pendente',
+            validate: {
+                isIn: [['pendente', 'atendido', 'faltou']],
+            },
         },
         data_inscricao: {
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW,
-        },
-        data_confirmacao: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
-        data_atendimento: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
-        compareceu: {
-            type: DataTypes.BOOLEAN,
-            allowNull: true,
-        },
-        cadastro_espontaneo: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false,
-        },
-        nota_final: {
-            type: DataTypes.DECIMAL(5, 2),
-            allowNull: true,
         },
         observacoes: {
             type: DataTypes.TEXT,
@@ -104,6 +86,8 @@ Inscricao.init(
         sequelize,
         tableName: 'inscricoes',
         timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
         underscored: true,
     }
 );

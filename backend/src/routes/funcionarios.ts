@@ -14,6 +14,15 @@ const funcionarioSchema = Joi.object({
     status: Joi.string().valid('ativo', 'inativo').optional(),
 });
 
+// Schema para atualização - campos opcionais
+const updateFuncionarioSchema = Joi.object({
+    nome: Joi.string().optional(),
+    cargo: Joi.string().optional(),
+    especialidade: Joi.string().allow(null, '').optional(),
+    custo_diario: Joi.number().precision(2).min(0).optional(),
+    status: Joi.string().valid('ativo', 'inativo').optional(),
+});
+
 router.get('/', authenticate, authorizeAdmin, async (_req: Request, res: Response) => {
     try {
         const funcionarios = await Funcionario.findAll({ order: [['nome', 'ASC']] });
@@ -32,7 +41,7 @@ router.post('/', authenticate, authorizeAdmin, validate(funcionarioSchema), asyn
     }
 });
 
-router.put('/:id', authenticate, authorizeAdmin, validate(funcionarioSchema), async (req: Request, res: Response) => {
+router.put('/:id', authenticate, authorizeAdmin, validate(updateFuncionarioSchema), async (req: Request, res: Response) => {
     try {
         const funcionario = await Funcionario.findByPk(req.params.id);
         if (!funcionario) {

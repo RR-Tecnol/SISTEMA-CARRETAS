@@ -14,9 +14,12 @@ const Caminhoes: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        placa: string; modelo: string; ano: number;
+        autonomia_km_litro: number; status: string
+    }>({
         placa: '', modelo: '', ano: new Date().getFullYear(),
-        capacidade_atendimento: 0, autonomia_km_litro: 0, status: 'disponivel'
+        autonomia_km_litro: 0, status: 'disponivel'
     });
     const { enqueueSnackbar } = useSnackbar();
 
@@ -55,7 +58,6 @@ const Caminhoes: React.FC = () => {
             placa: caminhao.placa,
             modelo: caminhao.modelo,
             ano: caminhao.ano,
-            capacidade_atendimento: caminhao.capacidade_atendimento,
             autonomia_km_litro: caminhao.autonomia_km_litro || 0,
             status: caminhao.status,
         });
@@ -67,7 +69,7 @@ const Caminhoes: React.FC = () => {
         setSelectedId(null);
         setFormData({
             placa: '', modelo: '', ano: new Date().getFullYear(),
-            capacidade_atendimento: 0, autonomia_km_litro: 0, status: 'disponivel'
+            autonomia_km_litro: 0, status: 'disponivel'
         });
     };
 
@@ -115,7 +117,6 @@ const Caminhoes: React.FC = () => {
                             <TableCell>Placa</TableCell>
                             <TableCell>Modelo</TableCell>
                             <TableCell>Ano</TableCell>
-                            <TableCell>Capacidade</TableCell>
                             <TableCell>Autonomia (km/l)</TableCell>
                             <TableCell>Status</TableCell>
                             <TableCell>Ações</TableCell>
@@ -127,7 +128,6 @@ const Caminhoes: React.FC = () => {
                                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{c.placa}</TableCell>
                                 <TableCell>{c.modelo}</TableCell>
                                 <TableCell>{c.ano}</TableCell>
-                                <TableCell>{c.capacidade_atendimento}</TableCell>
                                 <TableCell>{c.autonomia_km_litro || '-'} km/l</TableCell>
                                 <TableCell>
                                     <Chip
@@ -178,15 +178,6 @@ const Caminhoes: React.FC = () => {
                         margin="normal"
                         value={formData.ano}
                         onChange={e => setFormData({ ...formData, ano: parseInt(e.target.value) })}
-                        required
-                    />
-                    <TextField
-                        fullWidth
-                        label="Capacidade de Atendimento"
-                        type="number"
-                        margin="normal"
-                        value={formData.capacidade_atendimento}
-                        onChange={e => setFormData({ ...formData, capacidade_atendimento: parseInt(e.target.value) })}
                         required
                     />
                     <TextField

@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { Cidadao } from '../models/Cidadao';
 import { authenticate, AuthRequest } from '../middlewares/auth';
 import { uploadPerfil } from '../config/upload';
+import { Op } from 'sequelize';
 
 const router = Router();
 
@@ -20,13 +21,8 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        // Decrypt CPF for display
-        const cpfDecrypted = cidadao.getCPFDecrypted();
-
-        res.json({
-            ...cidadao.toJSON(),
-            cpf: cpfDecrypted,
-        });
+        // CPF já está em formato legível
+        res.json(cidadao.toJSON());
     } catch (error) {
         console.error('Error fetching cidadao:', error);
         res.status(500).json({ error: 'Erro ao buscar dados do cidadão' });
@@ -70,15 +66,10 @@ router.put('/me', authenticate, uploadPerfil.single('foto'), async (req: AuthReq
 
         await cidadao.update(updateData);
 
-        // Return updated data with decrypted CPF
-        const cpfDecrypted = cidadao.getCPFDecrypted();
-
+        // CPF já está em formato legível
         res.json({
             message: 'Dados atualizados com sucesso',
-            cidadao: {
-                ...cidadao.toJSON(),
-                cpf: cpfDecrypted,
-            },
+            cidadao: cidadao.toJSON(),
         });
     } catch (error) {
         console.error('Error updating cidadao:', error);
@@ -100,22 +91,17 @@ router.get('/buscar-cpf/:cpf', authenticate, async (req: AuthRequest, res: Respo
 
         const { cpf } = req.params;
         const cleanCPF = cpf.replace(/\D/g, '');
+        const formattedCPF = cleanCPF.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
 
-        // Find all cidadaos and decrypt CPFs to compare
-        const cidadaos = await Cidadao.findAll();
-
-        let cidadaoEncontrado = null;
-        for (const c of cidadaos) {
-            try {
-                const decryptedCPF = c.getCPFDecrypted();
-                if (decryptedCPF === cleanCPF) {
-                    cidadaoEncontrado = c;
-                    break;
-                }
-            } catch (error) {
-                continue;
-            }
-        }
+        // Buscar cidadão por CPF (aceita com ou sem formatação)
+        const cidadaoEncontrado = await Cidadao.findOne({
+            where: {
+                [Op.or]: [
+                    { cpf: cleanCPF },
+                    { cpf: formattedCPF },
+                ],
+            },
+        });
 
         if (!cidadaoEncontrado) {
             res.status(404).json({ error: 'Cidadão não encontrado' });
@@ -126,10 +112,7 @@ router.get('/buscar-cpf/:cpf', authenticate, async (req: AuthRequest, res: Respo
         const cidadaoData = cidadaoEncontrado.toJSON();
         delete cidadaoData.senha;
 
-        res.json({
-            ...cidadaoData,
-            cpf: cleanCPF,
-        });
+        res.json(cidadaoData);
     } catch (error) {
         console.error('Error searching cidadao by CPF:', error);
         res.status(500).json({ error: 'Erro ao buscar cidadão' });

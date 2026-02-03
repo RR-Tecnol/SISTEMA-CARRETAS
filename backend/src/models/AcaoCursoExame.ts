@@ -6,8 +6,6 @@ export interface AcaoCursoExameAttributes {
     acao_id: string;
     curso_exame_id: string;
     vagas: number;
-    horarios?: Record<string, any>;
-    campos_customizados?: Record<string, any>;
 }
 
 export class AcaoCursoExame extends Model<AcaoCursoExameAttributes> implements AcaoCursoExameAttributes {
@@ -15,8 +13,6 @@ export class AcaoCursoExame extends Model<AcaoCursoExameAttributes> implements A
     public acao_id!: string;
     public curso_exame_id!: string;
     public vagas!: number;
-    public horarios?: Record<string, any>;
-    public campos_customizados?: Record<string, any>;
 }
 
 AcaoCursoExame.init(
@@ -47,21 +43,11 @@ AcaoCursoExame.init(
             allowNull: false,
             defaultValue: 0,
         },
-        horarios: {
-            type: DataTypes.JSONB,
-            allowNull: true,
-            defaultValue: [],
-        },
-        campos_customizados: {
-            type: DataTypes.JSONB,
-            allowNull: true,
-            defaultValue: {},
-        },
     },
     {
         sequelize,
         tableName: 'acao_curso_exame',
-        timestamps: false,
+        timestamps: true,
         underscored: true,
     }
 );

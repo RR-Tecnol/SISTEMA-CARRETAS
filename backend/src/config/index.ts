@@ -27,10 +27,6 @@ export const config = {
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     },
 
-    encryption: {
-        key: process.env.ENCRYPTION_KEY || '',
-    },
-
     minio: {
         endPoint: process.env.MINIO_ENDPOINT || 'localhost',
         port: parseInt(process.env.MINIO_PORT || '9000', 10),

@@ -6,8 +6,8 @@ WORKDIR /app
 # Copiar package.json e package-lock.json
 COPY package*.json ./
 
-# Instalar dependências
-RUN npm ci --only=production
+# Instalar TODAS as dependências (incluindo devDependencies para o build)
+RUN npm ci
 
 # Copiar código fonte
 COPY . .
@@ -31,6 +31,11 @@ COPY --from=builder /app/dist ./dist
 
 # Criar usuário não-root
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
+# Criar diretórios de uploads com permissões corretas
+RUN mkdir -p /app/uploads/perfil /app/uploads/documentos && \
+    chown -R nodejs:nodejs /app/uploads
+
 USER nodejs
 
 # Expor porta

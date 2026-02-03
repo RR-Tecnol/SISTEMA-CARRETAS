@@ -54,7 +54,7 @@ Acao.init(
             type: DataTypes.INTEGER,
             allowNull: false,
             unique: true,
-            autoIncrement: false, // Será gerenciado pela sequence do PostgreSQL
+            autoIncrement: true, // Sequence do PostgreSQL
         },
         instituicao_id: {
             type: DataTypes.UUID,

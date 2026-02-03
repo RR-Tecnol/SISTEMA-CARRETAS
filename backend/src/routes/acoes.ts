@@ -23,10 +23,12 @@ const createAcaoSchema = Joi.object({
     estado: Joi.string().length(2).required(),
     data_inicio: Joi.date().required(),
     data_fim: Joi.date().required(),
-    descricao: Joi.string().optional(),
+    descricao: Joi.string().optional().allow('').allow(null),
     local_execucao: Joi.string().required(),
     vagas_disponiveis: Joi.number().integer().min(0).required(),
     campos_customizados: Joi.object().optional(),
+    distancia_km: Joi.number().optional().allow(null), // Permitir envio direto se o front mandar number
+    preco_combustivel_referencia: Joi.number().optional().allow(null),
     cursos_exames: Joi.array().items(
         Joi.object({
             curso_exame_id: Joi.string().uuid().required(),
@@ -86,8 +88,8 @@ router.get('/', async (req: Request, res: Response) => {
         });
 
         res.json(acoes);
-    } catch (error) {
-        console.error('Error fetching acoes:', error);
+    } catch (error: any) {
+        console.error('❌ ERRO GET ACOES:', error);
         res.status(500).json({ error: 'Erro ao buscar ações' });
     }
 });
@@ -135,33 +137,35 @@ router.get('/:id', async (req: Request, res: Response) => {
         // Calcular custos
         const dataInicio = new Date(acao.data_inicio);
         const dataFim = new Date(acao.data_fim);
-        const dias = Math.ceil((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const diffTime = Math.abs(dataFim.getTime() - dataInicio.getTime());
+        const dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-        const custoCaminhoes = (acao as any).caminhoes?.reduce((acc: number, c: any) => acc + (Number(c.custo_diario) * dias), 0) || 0;
-        const custoFuncionarios = (acao as any).funcionarios?.reduce((acc: number, f: any) => acc + (Number(f.custo_diario) * dias), 0) || 0;
-        const custoTotal = custoCaminhoes + custoFuncionarios;
+        const funcionariosList = (acao as any).funcionarios || [];
+        const custoFuncionarios = funcionariosList.reduce((acc: number, f: any) => {
+            const custo = f.custo_diario ? Number(f.custo_diario) : 0;
+            return acc + (custo * dias);
+        }, 0);
+        const custoTotal = custoFuncionarios;
 
-        // Contar atendidos (presença confirmada)
+        // Contar atendidos (status 'atendido')
         const atendidos = await Inscricao.count({
-            include: [{
-                model: AcaoCursoExame,
-                as: 'acao_curso',
-                where: { acao_id: id }
-            }],
-            where: { compareceu: true }
+            where: {
+                acao_id: id,
+                status: 'atendido'
+            }
         });
 
+        // Safe division
         const custoPorPessoa = atendidos > 0 ? custoTotal / atendidos : 0;
 
         res.json({
             ...acao.toJSON(),
             resumo_financeiro: {
-                dias,
-                custo_caminhoes: custoCaminhoes,
+                dias: dias > 0 ? dias : 0,
                 custo_funcionarios: custoFuncionarios,
                 custo_total: custoTotal,
                 atendidos,
-                custo_por_pessoa: custoPorPessoa
+                custo_por_pessoa: Number(custoPorPessoa.toFixed(2))
             }
         });
     } catch (error) {
@@ -169,6 +173,35 @@ router.get('/:id', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Erro ao buscar ação' });
     }
 });
+
+/**
+ * GET /api/acoes/:id/funcionarios
+ * Listar funcionários vinculados à ação (admin)
+ */
+router.get('/:id/funcionarios', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const acao = await Acao.findByPk(id, {
+            include: [
+                {
+                    model: Funcionario,
+                    as: 'funcionarios',
+                },
+            ],
+        });
+
+        if (!acao) {
+            res.status(404).json({ error: 'Ação não encontrada' });
+            return;
+        }
+
+        res.json((acao as any).funcionarios || []);
+    } catch (error) {
+        console.error('Error fetching action employees:', error);
+        res.status(500).json({ error: 'Erro ao buscar funcionários da ação' });
+    }
+});
+
 
 /**
  * POST /api/acoes
@@ -237,6 +270,14 @@ router.put('/:id', authenticate, authorizeAdmin, async (req: Request, res: Respo
         const { id } = req.params;
         const updateData = req.body;
 
+        // Sanitização de decimais vindos como string com vírgula (gambiarra frontend-friendly)
+        if (typeof updateData.distancia_km === 'string') {
+            updateData.distancia_km = parseFloat(updateData.distancia_km.replace(',', '.'));
+        }
+        if (typeof updateData.preco_combustivel_referencia === 'string') {
+            updateData.preco_combustivel_referencia = parseFloat(updateData.preco_combustivel_referencia.replace(',', '.'));
+        }
+
         const acao = await Acao.findByPk(id);
         if (!acao) {
             res.status(404).json({ error: 'Ação não encontrada' });
@@ -257,12 +298,17 @@ router.put('/:id', authenticate, authorizeAdmin, async (req: Request, res: Respo
 
 /**
  * POST /api/acoes/:id/cursos-exames
- * Vincular curso/exame à ação (admin)
+ * Vincular curso/exame (admin)
  */
 router.post('/:id/cursos-exames', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { curso_exame_id, vagas, horarios } = req.body;
+        const { curso_exame_id, vagas } = req.body;
+
+        if (!curso_exame_id || !vagas) {
+            res.status(400).json({ error: 'curso_exame_id e vagas são obrigatórios' });
+            return;
+        }
 
         const acao = await Acao.findByPk(id);
         if (!acao) {
@@ -276,16 +322,15 @@ router.post('/:id/cursos-exames', authenticate, authorizeAdmin, async (req: Requ
             return;
         }
 
-        const acaoCurso = await AcaoCursoExame.create({
+        const acaoCursoExame = await AcaoCursoExame.create({
             acao_id: id,
             curso_exame_id,
-            vagas: vagas || 0,
-            horarios: horarios || [],
-        });
+            vagas,
+        } as any);
 
         res.status(201).json({
             message: 'Curso/Exame vinculado com sucesso',
-            acaoCurso,
+            acaoCursoExame,
         });
     } catch (error) {
         console.error('Error linking curso/exame:', error);
@@ -295,23 +340,25 @@ router.post('/:id/cursos-exames', authenticate, authorizeAdmin, async (req: Requ
 
 /**
  * DELETE /api/acoes/:id/cursos-exames/:cursoExameId
- * Desvincular curso/exame da ação (admin)
+ * Desvincular curso/exame (admin)
  */
 router.delete('/:id/cursos-exames/:cursoExameId', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const { id, cursoExameId } = req.params;
 
-        const deleted = await AcaoCursoExame.destroy({
+        const link = await AcaoCursoExame.findOne({
             where: {
                 acao_id: id,
-                id: cursoExameId,
+                curso_exame_id: cursoExameId,
             },
         });
 
-        if (deleted === 0) {
+        if (!link) {
             res.status(404).json({ error: 'Vínculo não encontrado' });
             return;
         }
+
+        await link.destroy();
 
         res.json({ message: 'Curso/Exame desvinculado com sucesso' });
     } catch (error) {
@@ -320,116 +367,143 @@ router.delete('/:id/cursos-exames/:cursoExameId', authenticate, authorizeAdmin, 
     }
 });
 
+// === ROTAS FALTANTES ADICIONADAS ===
+
 /**
  * POST /api/acoes/:id/caminhoes
- * Vincular caminhão à ação
+ * Vincular caminhão (admin)
  */
 router.post('/:id/caminhoes', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { caminhao_id } = req.body;
-        await AcaoCaminhao.create({ acao_id: id, caminhao_id });
+        const { caminhao_id } = req.body; // Front manda { caminhao_id: "..." }
+
+        if (!caminhao_id) {
+            res.status(400).json({ error: 'caminhao_id é obrigatório' });
+            return;
+        }
+
+        const acao = await Acao.findByPk(id);
+        if (!acao) {
+            res.status(404).json({ error: 'Ação não encontrada' });
+            return;
+        }
+
+        // Verificar se caminhão existe
+        const caminhao = await Caminhao.findByPk(caminhao_id);
+        if (!caminhao) {
+            res.status(404).json({ error: 'Caminhão não encontrado' });
+            return;
+        }
+
+        // Criar vínculo
+        await AcaoCaminhao.create({
+            acao_id: id,
+            caminhao_id
+        } as any);
+
         res.status(201).json({ message: 'Caminhão vinculado com sucesso' });
     } catch (error) {
+        console.error('Error linking caminhao:', error);
         res.status(500).json({ error: 'Erro ao vincular caminhão' });
     }
 });
 
 /**
  * DELETE /api/acoes/:id/caminhoes/:caminhaoId
- * Desvincular caminhão da ação
+ * Desvincular caminhão
  */
 router.delete('/:id/caminhoes/:caminhaoId', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const { id, caminhaoId } = req.params;
-        const deleted = await AcaoCaminhao.destroy({
+
+        const link = await AcaoCaminhao.findOne({
             where: {
                 acao_id: id,
-                caminhao_id: caminhaoId,
-            },
+                caminhao_id: caminhaoId
+            }
         });
 
-        if (deleted === 0) {
+        if (!link) {
             res.status(404).json({ error: 'Vínculo não encontrado' });
             return;
         }
 
+        await link.destroy();
         res.json({ message: 'Caminhão desvinculado com sucesso' });
+
     } catch (error) {
+        console.error('Error unlinking caminhao:', error);
         res.status(500).json({ error: 'Erro ao desvincular caminhão' });
     }
 });
 
 /**
  * POST /api/acoes/:id/funcionarios
- * Vincular funcionário à ação
+ * Vincular funcionário (admin)
  */
 router.post('/:id/funcionarios', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { funcionario_id } = req.body;
-        await AcaoFuncionario.create({ acao_id: id, funcionario_id });
-        return res.status(201).json({ message: 'Funcionário vinculado com sucesso' });
-    } catch (error: any) {
-        console.error('Erro ao vincular funcionário:', error);
-        // Check if it's a unique constraint violation (employee already assigned)
-        if (error.name === 'SequelizeUniqueConstraintError' || error.code === '23505') {
-            return res.status(400).json({ error: 'Este funcionário já está vinculado a esta ação' });
-        }
-        return res.status(500).json({ error: 'Erro ao vincular funcionário' });
-    }
-});
 
-
-
-/**
- * GET /api/acoes/:id/funcionarios
- * Listar funcion�rios vinculados � a��o
- */
-router.get('/:id/funcionarios', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const funcionarios = await AcaoFuncionario.findAll({
-            where: { acao_id: id },
-            include: [{
-                model: Funcionario,
-                as: 'funcionario',
-                attributes: ['id', 'nome', 'cargo', 'especialidade', 'custo_diario', 'status']
-            }]
-        });
-        res.json(funcionarios);
-    } catch (error) {
-        console.error('Erro ao listar funcion�rios da a��o:', error);
-        res.status(500).json({ error: 'Erro ao listar funcion�rios' });
-    }
-});
-
-/**
- * DELETE /api/acoes/:id/funcionarios/:funcionario_id
- * Desvincular funcion�rio da a��o
- */
-router.delete('/:id/funcionarios/:funcionario_id', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id, funcionario_id } = req.params;
-        
-        const deleted = await AcaoFuncionario.destroy({
-            where: {
-                acao_id: id,
-                funcionario_id
-            }
-        });
-        
-        if (deleted === 0) {
-            res.status(404).json({ error: 'V�nculo n�o encontrado' });
+        if (!funcionario_id) {
+            res.status(400).json({ error: 'funcionario_id é obrigatório' });
             return;
         }
-        
-        res.json({ message: 'Funcion�rio desvinculado com sucesso' });
+
+        const acao = await Acao.findByPk(id);
+        if (!acao) {
+            res.status(404).json({ error: 'Ação não encontrada' });
+            return;
+        }
+
+        const func = await Funcionario.findByPk(funcionario_id);
+        if (!func) {
+            res.status(404).json({ error: 'Funcionário não encontrado' });
+            return;
+        }
+
+        await AcaoFuncionario.create({
+            acao_id: id,
+            funcionario_id
+        } as any);
+
+        res.status(201).json({ message: 'Funcionário vinculado com sucesso' });
+
     } catch (error) {
-        console.error('Erro ao desvincular funcion�rio:', error);
-        res.status(500).json({ error: 'Erro ao desvincular funcion�rio' });
+        console.error('Error linking funcionario:', error);
+        res.status(500).json({ error: 'Erro ao vincular funcionário' });
     }
 });
 
-export default router;
+/**
+ * DELETE /api/acoes/:id/funcionarios/:funcionarioId
+ * Desvincular funcionário
+ */
+router.delete('/:id/funcionarios/:funcionarioId', authenticate, authorizeAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id, funcionarioId } = req.params;
 
+        const link = await AcaoFuncionario.findOne({
+            where: {
+                acao_id: id,
+                funcionario_id: funcionarioId
+            }
+        });
+
+        if (!link) {
+            res.status(404).json({ error: 'Vínculo não encontrado' });
+            return;
+        }
+
+        await link.destroy();
+        res.json({ message: 'Funcionário desvinculado com sucesso' });
+    } catch (error) {
+        console.error('Error unlinking funcionario:', error);
+        res.status(500).json({ error: 'Erro ao desvincular funcionário' });
+    }
+});
+
+
+export default router;

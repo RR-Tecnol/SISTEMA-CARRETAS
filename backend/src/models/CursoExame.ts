@@ -11,7 +11,6 @@ export interface CursoExameAttributes {
     descricao?: string;
     requisitos?: string;
     certificadora?: string;
-    campos_customizados?: Record<string, any>;
     ativo: boolean;
 }
 
@@ -23,7 +22,6 @@ export class CursoExame extends Model<CursoExameAttributes> implements CursoExam
     public descricao?: string;
     public requisitos?: string;
     public certificadora?: string;
-    public campos_customizados?: Record<string, any>;
     public ativo!: boolean;
 
     public readonly created_at!: Date;
@@ -61,11 +59,6 @@ CursoExame.init(
             type: DataTypes.STRING,
             allowNull: true,
         },
-        campos_customizados: {
-            type: DataTypes.JSONB,
-            allowNull: true,
-            defaultValue: {},
-        },
         ativo: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
@@ -75,7 +68,7 @@ CursoExame.init(
     {
         sequelize,
         tableName: 'cursos_exames',
-        timestamps: true,
+        timestamps: false,
         underscored: true,
     }
 );

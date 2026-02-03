@@ -47,9 +47,12 @@ Funcionario.init(
             defaultValue: 0.00,
         },
         status: {
-            type: DataTypes.ENUM('ativo', 'inativo'),
+            type: DataTypes.STRING,
             allowNull: false,
             defaultValue: 'ativo',
+            validate: {
+                isIn: [['ativo', 'inativo']],
+            },
         },
     },
     {

@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { generateToken } from '../utils/auth';
 import { Cidadao } from '../models/Cidadao';
-import { encrypt } from '../utils/encryption';
 import { validarCPF } from '../utils/validators';
 import Joi from 'joi';
 import { validate } from '../middlewares/validation';
@@ -60,49 +59,35 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response)
             return;
         }
 
-        const cleanCPF = cpf.replace(/\D/g, '');
+        const cleanCPF = cpf.replace(/\D/g, ''); // Remove formatação: 12345678909
+        const formattedCPF = cleanCPF.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4'); // 123.456.789-09
 
-        // Find all cidadaos and decrypt CPFs to compare
-        // (We can't encrypt and compare because AES-GCM uses random IV)
-        const cidadaos = await Cidadao.findAll();
-
-        let cidadao = null;
-        for (const c of cidadaos) {
-            try {
-                const decryptedCPF = c.getCPFDecrypted();
-                if (decryptedCPF === cleanCPF) {
-                    cidadao = c;
-                    break;
-                }
-            } catch (error) {
-                // Skip if decryption fails
-                continue;
-            }
-        }
+        // Buscar cidadão por CPF (aceita com ou sem formatação)
+        const cidadao = await Cidadao.findOne({
+            where: {
+                [Op.or]: [
+                    { cpf: cleanCPF },      // 12345678909
+                    { cpf: formattedCPF },  // 123.456.789-09
+                ],
+            },
+        });
 
         if (!cidadao) {
-            res.status(404).json({ error: 'DEBUG: Cidadão não encontrado no banco.' });
+            res.status(404).json({ error: 'Usuário não encontrado' });
             return;
         }
 
         // Validate password
         if (!cidadao.senha) {
-            res.status(401).json({ error: 'DEBUG: Campo senha está vazio/nulo no banco.' });
+            res.status(401).json({ error: 'Senha não cadastrada' });
             return;
         }
 
         const senhaValida = await bcrypt.compare(senha, cidadao.senha);
 
         if (!senhaValida) {
-            // Auto-correction logic for test environment
-            if (senha === '12345678') {
-                const newHash = await bcrypt.hash(senha, 10);
-                cidadao.senha = newHash;
-                await cidadao.save();
-            } else {
-                res.status(401).json({ error: 'CPF ou senha inválidos' });
-                return;
-            }
+            res.status(401).json({ error: 'CPF ou senha inválidos' });
+            return;
         }
 
         // Generate JWT token
@@ -156,8 +141,8 @@ router.post('/cadastro', validate(cadastroSchema), async (req: Request, res: Res
             return;
         }
 
-        const cleanCPF = cpf.replace(/\D/g, '');
-        const encryptedCPF = encrypt(cleanCPF);
+        const cleanCPF = cpf.replace(/\\D/g, '');
+        const formattedCPF = cleanCPF.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
 
         // 1. Check if Email already exists
         const existingEmail = await Cidadao.findOne({ where: { email } });
@@ -166,22 +151,17 @@ router.post('/cadastro', validate(cadastroSchema), async (req: Request, res: Res
             return;
         }
 
-        // 2. Check if CPF already exists (Iterative check due to random IV encryption)
-        // Note: For large datasets, we should migrate to deterministic encryption hash for lookup columns.
-        const allCidadaos = await Cidadao.findAll({ attributes: ['id', 'cpf'] });
-        let cpfExists = false;
+        // 2. Check if CPF already exists
+        const existingCPF = await Cidadao.findOne({
+            where: {
+                [Op.or]: [
+                    { cpf: cleanCPF },
+                    { cpf: formattedCPF },
+                ],
+            },
+        });
 
-        for (const c of allCidadaos) {
-            try {
-                const dec = c.getCPFDecrypted();
-                if (dec === cleanCPF) {
-                    cpfExists = true;
-                    break;
-                }
-            } catch (e) { continue; }
-        }
-
-        if (cpfExists) {
+        if (existingCPF) {
             res.status(409).json({ error: 'CPF já cadastrado.' });
             return;
         }
@@ -197,7 +177,7 @@ router.post('/cadastro', validate(cadastroSchema), async (req: Request, res: Res
 
         // Create new cidadao
         const cidadao = await Cidadao.create({
-            cpf: encryptedCPF,
+            cpf: formattedCPF,  // Salvando com formatação padrão
             nome_completo,
             data_nascimento,
             telefone,
@@ -252,17 +232,18 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
         if (email) {
             cidadao = await Cidadao.findOne({ where: { email } });
         } else if (cpf) {
-            // Iterate strategy (same as login)
+            // Buscar por CPF
             const cleanCPF = cpf.replace(/\D/g, '');
-            const allCidadaos = await Cidadao.findAll();
-            for (const c of allCidadaos) {
-                try {
-                    if (c.getCPFDecrypted().replace(/\D/g, '') === cleanCPF) {
-                        cidadao = c;
-                        break;
-                    }
-                } catch (e) { }
-            }
+            const formattedCPF = cleanCPF.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+
+            cidadao = await Cidadao.findOne({
+                where: {
+                    [Op.or]: [
+                        { cpf: cleanCPF },
+                        { cpf: formattedCPF },
+                    ],
+                },
+            });
         }
 
         if (!cidadao) {
@@ -347,3 +328,4 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 });
 
 export default router;
+

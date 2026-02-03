@@ -6,8 +6,8 @@ export interface CaminhaoAttributes {
     placa: string;
     modelo: string;
     ano: number;
-    capacidade_atendimento: number;
     autonomia_km_litro: number;
+    capacidade_litros: number;
     status: 'disponivel' | 'em_manutencao' | 'em_acao';
 }
 
@@ -16,8 +16,8 @@ export class Caminhao extends Model<CaminhaoAttributes> implements CaminhaoAttri
     public placa!: string;
     public modelo!: string;
     public ano!: number;
-    public capacidade_atendimento!: number;
     public autonomia_km_litro!: number;
+    public capacidade_litros!: number;
     public status!: 'disponivel' | 'em_manutencao' | 'em_acao';
 
     public readonly created_at!: Date;
@@ -44,21 +44,26 @@ Caminhao.init(
             type: DataTypes.INTEGER,
             allowNull: false,
         },
-        capacidade_atendimento: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            defaultValue: 0,
-        },
         autonomia_km_litro: {
             type: DataTypes.DECIMAL(5, 2),
             allowNull: false,
             defaultValue: 0.00,
+            field: 'km_por_litro',
             comment: 'Autonomia do caminhão em km por litro',
         },
+        capacidade_litros: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+            field: 'capacidade_litros',
+        },
         status: {
-            type: DataTypes.ENUM('disponivel', 'em_manutencao', 'em_acao'),
+            type: DataTypes.STRING, // Banco usa VARCHAR com CHECK, não ENUM nativo
             allowNull: false,
             defaultValue: 'disponivel',
+            validate: {
+                isIn: [['disponivel', 'em_uso', 'manutencao']],
+            },
         },
     },
     {

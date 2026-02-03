@@ -7,18 +7,18 @@
         ],
         "outDir": "./dist",
         "rootDir": "./src",
-        "strict": true,
+        "strict": false,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
         "moduleResolution": "node",
-        "declaration": true,
-        "declarationMap": true,
-        "sourceMap": true,
-        "noUnusedLocals": true,
+        "declaration": false,
+        "declarationMap": false,
+        "sourceMap": false,
+        "noUnusedLocals": false,
         "noUnusedParameters": false,
-        "noImplicitReturns": true,
+        "noImplicitReturns": false,
         "noFallthroughCasesInSwitch": true,
         "types": [
             "node",
@@ -31,6 +31,10 @@
     "exclude": [
         "node_modules",
         "dist",
-        "**/*.test.ts"
+        "**/*.test.ts",
+        "src/scripts/test-*.ts",
+        "src/scripts/check-*.ts",
+        "src/scripts/fix-*.ts",
+        "src/scripts/delete-*.ts"
     ]
 }

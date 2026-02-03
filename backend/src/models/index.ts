@@ -70,14 +70,24 @@ export function setupAssociations(): void {
         as: 'cidadao',
     });
 
-    // AcaoCursoExame <-> Inscricao (1:N)
-    AcaoCursoExame.hasMany(Inscricao, {
-        foreignKey: 'acao_curso_id',
+    // Acao <-> Inscricao (1:N)
+    Acao.hasMany(Inscricao, {
+        foreignKey: 'acao_id',
         as: 'inscricoes',
     });
-    Inscricao.belongsTo(AcaoCursoExame, {
-        foreignKey: 'acao_curso_id',
-        as: 'acao_curso',
+    Inscricao.belongsTo(Acao, {
+        foreignKey: 'acao_id',
+        as: 'acao',
+    });
+
+    // CursoExame <-> Inscricao (1:N)
+    CursoExame.hasMany(Inscricao, {
+        foreignKey: 'curso_exame_id',
+        as: 'inscricoes',
+    });
+    Inscricao.belongsTo(CursoExame, {
+        foreignKey: 'curso_exame_id',
+        as: 'curso_exame',
     });
 
     // Acao <-> Notificacao (1:N)
