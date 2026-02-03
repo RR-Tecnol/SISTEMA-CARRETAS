@@ -74,7 +74,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
         const inscricao = await Inscricao.create({
             cidadao_id,
             acao_curso_id,
-            status: 'inscrito',
+            status: 'inscrito' as any,
             data_inscricao: new Date(),
         });
 
@@ -141,7 +141,7 @@ router.put('/:id/presenca', authenticate, authorizeAdmin, async (req: Request, r
 
         await inscricao.update({
             compareceu,
-            status: compareceu ? 'confirmado' : inscricao.status,
+            status: compareceu ? ('confirmado' as any) : inscricao.status,
         });
 
         res.json({
@@ -248,7 +248,7 @@ router.post('/acoes/:acaoId/inscricoes', authenticate, authorizeAdmin, async (re
         const inscricao = await Inscricao.create({
             cidadao_id,
             acao_curso_id,
-            status: 'inscrito',
+            status: 'inscrito' as any,
             data_inscricao: new Date(),
             cadastro_espontaneo,
         });
@@ -278,7 +278,7 @@ router.put('/:id/confirmar', authenticate, authorizeAdmin, async (req: Request, 
         }
 
         await inscricao.update({
-            status: 'confirmado',
+            status: 'confirmado' as any,
             data_confirmacao: new Date(),
         });
 
@@ -308,7 +308,7 @@ router.put('/:id/marcar-atendimento', authenticate, authorizeAdmin, async (req: 
         }
 
         await inscricao.update({
-            status: 'concluido',
+            status: 'concluido' as any,
             compareceu: true,
             data_atendimento: new Date(),
             observacoes: observacoes || inscricao.observacoes,
@@ -374,19 +374,19 @@ router.put('/:id/status', authenticate, authorizeAdmin, async (req: Request, res
         // Mapear status para campos do banco
         switch (status) {
             case 'atendido':
-                inscricao.status = 'confirmado';
+                inscricao.status = 'confirmado' as any;
                 inscricao.compareceu = true;
                 inscricao.data_atendimento = new Date();
                 break;
             case 'faltou':
-                inscricao.status = 'inscrito';
+                inscricao.status = 'inscrito' as any;
                 inscricao.compareceu = false;
                 break;
             case 'pendente':
             default:
-                inscricao.status = 'inscrito';
-                inscricao.compareceu = undefined;
-                inscricao.data_atendimento = undefined;
+                inscricao.status = 'inscrito' as any;
+                (inscricao as any).compareceu = null;
+                (inscricao as any).data_atendimento = null;
                 break;
         }
 

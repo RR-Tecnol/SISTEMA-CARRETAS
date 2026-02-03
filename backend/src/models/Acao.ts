@@ -123,5 +123,16 @@ Acao.init(
         tableName: 'acoes',
         timestamps: true,
         underscored: true,
+        hooks: {
+            beforeCreate: async (acao: Acao) => {
+                // Garante que numero_acao seja sempre gerado via sequence PostgreSQL
+                if (!acao.numero_acao) {
+                    const [result] = await sequelize.query(
+                        "SELECT nextval('acoes_numero_acao_seq') as numero"
+                    );
+                    acao.numero_acao = (result[0] as any).numero;
+                }
+            },
+        },
     }
 );

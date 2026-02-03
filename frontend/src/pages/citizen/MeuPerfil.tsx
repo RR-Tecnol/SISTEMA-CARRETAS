@@ -199,8 +199,11 @@ const MeuPerfil: React.FC = () => {
         );
     }
 
+    // URL base da API (sem /api)
+    const API_BASE_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001';
+
     const avatarUrl = perfil?.foto_perfil
-        ? `http://localhost:3001${perfil.foto_perfil}`
+        ? `${API_BASE_URL}${perfil.foto_perfil}`
         : undefined;
 
     return (

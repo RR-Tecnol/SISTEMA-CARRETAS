@@ -208,8 +208,9 @@ const Relatorios: React.FC = () => {
     acoes.forEach((acao: any) => {
         if (acao.cursos_exames && Array.isArray(acao.cursos_exames)) {
             acao.cursos_exames.forEach((ce: any) => {
-                if (ce.AcaoCursoExame && ce.AcaoCursoExame.id) {
-                    acaoCursoMap.set(ce.AcaoCursoExame.id, ce.nome || 'Curso sem nome');
+                // A estrutura correta é: ce.id (AcaoCursoExame.id) e ce.curso_exame.nome
+                if (ce.id && ce.curso_exame) {
+                    acaoCursoMap.set(ce.id, ce.curso_exame.nome || 'Curso sem nome');
                 }
             });
         }

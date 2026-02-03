@@ -28,7 +28,9 @@ router.get('/acoes/:acaoId/export/inscritos', authenticate, authorizeAdmin, asyn
             return;
         }
 
-        // Buscar inscrições
+        // Buscar inscrições da ação
+        // Removido filtro de status para compatibilidade com novos status (pendente, atendido, faltou)
+        // A filtragem é feita depois na linha 93-98 baseado no campo 'compareceu'
         const inscricoes = await Inscricao.findAll({
             include: [
                 {
@@ -48,9 +50,6 @@ router.get('/acoes/:acaoId/export/inscritos', authenticate, authorizeAdmin, asyn
                     attributes: ['id', 'nome_completo', 'cpf', 'telefone', 'email'],
                 },
             ],
-            where: {
-                status: ['inscrito', 'confirmado', 'concluido'],
-            },
             order: [['created_at', 'ASC']],
         });
 
@@ -120,7 +119,7 @@ router.get('/acoes/:acaoId/export/atendidos', authenticate, authorizeAdmin, asyn
             return;
         }
 
-        // Buscar apenas atendidos
+        // Buscar apenas atendidos (compareceu = true)
         const inscricoes = await Inscricao.findAll({
             include: [
                 {
@@ -141,7 +140,6 @@ router.get('/acoes/:acaoId/export/atendidos', authenticate, authorizeAdmin, asyn
                 },
             ],
             where: {
-                status: 'concluido',
                 compareceu: true,
             },
             order: [['data_atendimento', 'ASC']],
