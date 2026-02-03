@@ -50,7 +50,6 @@ CREATE TABLE cursos_exames (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome VARCHAR(255) NOT NULL,
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('curso', 'exame')),
-    tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('curso', 'exame')),
     carga_horaria INTEGER,
     descricao TEXT,
     requisitos TEXT,
