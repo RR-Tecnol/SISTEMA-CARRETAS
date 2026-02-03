@@ -50,23 +50,24 @@ CREATE TABLE cursos_exames (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome VARCHAR(255) NOT NULL,
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('curso', 'exame')),
+    tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('curso', 'exame')),
     carga_horaria INTEGER,
     descricao TEXT,
     requisitos TEXT,
     certificadora VARCHAR(255),
     ativo BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Adicionado Timestamps
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()  -- Adicionado Timestamps
 );
 
 -- Caminhões
 CREATE TABLE caminhoes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     placa VARCHAR(10) UNIQUE NOT NULL,
-    modelo VARCHAR(100) NOT NULL,
-    ano INTEGER NOT NULL,
-    capacidade_litros INTEGER NOT NULL,
-    km_por_litro DECIMAL(4, 1) NOT NULL,
+    modelo VARCHAR(255) NOT NULL,
+    ano INTEGER,
+    capacidade_litros DECIMAL(10, 2),
+    km_por_litro DECIMAL(10, 2),
     status VARCHAR(20) NOT NULL DEFAULT 'disponivel' CHECK (status IN ('disponivel', 'em_uso', 'manutencao')),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -77,9 +78,11 @@ CREATE TABLE funcionarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome VARCHAR(255) NOT NULL,
     cargo VARCHAR(100) NOT NULL,
-    especialidade VARCHAR(100),
-    custo_diario DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'inativo')),
+    email VARCHAR(255),
+    telefone VARCHAR(20),
+    diaria DECIMAL(10, 2),
+    custo_diario DECIMAL(10, 2),
+    status VARCHAR(20) NOT NULL DEFAULT 'disponivel' CHECK (status IN ('disponivel', 'em_missao', 'ferias', 'inativo')),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -87,7 +90,7 @@ CREATE TABLE funcionarios (
 -- Ações
 CREATE TABLE acoes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    numero_acao INTEGER UNIQUE NOT NULL DEFAULT nextval('acoes_numero_acao_seq'),
+    numero_acao SERIAL UNIQUE, -- Alterado para SERIAL para auto-incremento correto
     instituicao_id UUID NOT NULL REFERENCES instituicoes(id),
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('curso', 'saude')),
     municipio VARCHAR(255) NOT NULL,
@@ -98,8 +101,8 @@ CREATE TABLE acoes (
     descricao TEXT,
     local_execucao VARCHAR(255) NOT NULL,
     vagas_disponiveis INTEGER NOT NULL DEFAULT 0,
-    distancia_km INTEGER,
-    preco_combustivel_referencia DECIMAL(6, 3),
+    distancia_km DECIMAL(10, 2), -- Corrigido para DECIMAL
+    preco_combustivel_referencia DECIMAL(10, 2), -- Corrigido para DECIMAL
     campos_customizados JSONB DEFAULT '{}',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -172,6 +175,7 @@ CREATE TABLE inscricoes (
     curso_exame_id UUID REFERENCES cursos_exames(id) ON DELETE SET NULL,
     data_inscricao TIMESTAMP NOT NULL DEFAULT NOW(),
     status VARCHAR(20) NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'atendido', 'faltou')),
+    observacoes TEXT, -- Adicionado campo Observacões
     campos_customizados JSONB DEFAULT '{}',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
