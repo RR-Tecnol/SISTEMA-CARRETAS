@@ -37,6 +37,7 @@ router.post('/', authenticate, authorizeAdmin, validate(funcionarioSchema), asyn
         const funcionario = await Funcionario.create(req.body);
         res.status(201).json(funcionario);
     } catch (error) {
+        console.error('Erro detalhado ao criar funcionário:', error);
         res.status(500).json({ error: 'Erro ao criar funcionário' });
     }
 });
