@@ -79,13 +79,20 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response)
 
         // Validate password
         if (!cidadao.senha) {
+            console.log('LOGIN_DEBUG: Senha não cadastrada para CPF:', cpf);
             res.status(401).json({ error: 'Senha não cadastrada' });
             return;
         }
 
+        console.log('LOGIN_DEBUG: Comparando senha...');
+        console.log('LOGIN_DEBUG: Senha Recebida:', senha);
+        console.log('LOGIN_DEBUG: Hash no Banco:', cidadao.senha);
+
         const senhaValida = await bcrypt.compare(senha, cidadao.senha);
+        console.log('LOGIN_DEBUG: Resultado da comparação:', senhaValida);
 
         if (!senhaValida) {
+            console.log('LOGIN_DEBUG: Senha inválida');
             res.status(401).json({ error: 'CPF ou senha inválidos' });
             return;
         }
