@@ -58,13 +58,13 @@ services:
       # MinIO removido (Uso local de disco)
 
       # JWT
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-super_secure_random_secre_key_change_in_prod_12345}
 
       # CORS
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-    ports:
-      - "3001:3001"
+    # ports:
+    #   - "3001:3001" # Security: Exposed only via internal network to Nginx
     volumes:
       - uploads_data:/app/uploads
     depends_on:

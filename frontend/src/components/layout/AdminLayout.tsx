@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { API_URL } from '../../services/api';
 import {
     Box,
     Drawer,
@@ -72,7 +73,7 @@ const AdminLayout: React.FC = () => {
             api.get('/admins/me')
                 .then((response) => {
                     if (response.data.foto_perfil) {
-                        setAdminFoto(`http://localhost:3001${response.data.foto_perfil}`);
+                        setAdminFoto(`${API_URL}${response.data.foto_perfil}`);
                     }
                 })
                 .catch((error) => {

@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import api from '../../services/api';
 import { formatCPF, formatPhone, formatCEP } from '../../utils/formatters';
+import { API_URL } from '../../services/api';
 
 interface ViewFieldProps {
     label: string;
@@ -200,10 +201,11 @@ const MeuPerfil: React.FC = () => {
     }
 
     // URL base da API (sem /api)
-    const API_BASE_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001';
+    // URL base da API (sem /api)
+    // const API_BASE_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001';
 
     const avatarUrl = perfil?.foto_perfil
-        ? `${API_BASE_URL}${perfil.foto_perfil}`
+        ? `${API_URL}${perfil.foto_perfil}`
         : undefined;
 
     return (
