@@ -74,12 +74,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
-      # MinIO
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: "false"
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      # MinIO removido (Uso local de disco)
 
       # JWT
       JWT_SECRET: ${JWT_SECRET}
@@ -89,12 +84,12 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     ports:
       - "3001:3001"
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      minio:
         condition: service_healthy
     networks:
       - carretas-network
@@ -121,7 +116,7 @@ volumes:
     driver: local
   redis_data:
     driver: local
-  minio_data:
+  uploads_data:
     driver: local
 
 networks:
