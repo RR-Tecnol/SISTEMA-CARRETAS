@@ -80,6 +80,7 @@ CREATE TABLE funcionarios (
     email VARCHAR(255),
     telefone VARCHAR(20),
     diaria DECIMAL(10, 2),
+    especialidade VARCHAR(255),
     custo_diario DECIMAL(10, 2),
     status VARCHAR(20) NOT NULL DEFAULT 'disponivel' CHECK (status IN ('disponivel', 'em_missao', 'ferias', 'inativo')),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
