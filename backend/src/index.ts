@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import { testConnection, sequelize } from './config/database';
@@ -33,6 +34,9 @@ console.log('✅ VERSÃO ATUALIZADA: 2026-02-03 20:50');
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
+// Compression middleware (gzip)
+app.use(compression());
 
 // Serve static files BEFORE CORS to ensure proper headers
 app.use('/uploads', express.static('uploads'));

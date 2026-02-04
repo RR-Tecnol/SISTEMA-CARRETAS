@@ -17,7 +17,7 @@ router.get('/', async (req: Request, res: Response) => {
 
         const cursosExames = await CursoExame.findAll({
             where,
-            attributes: ['id', 'nome', 'tipo', 'ativo', 'created_at', 'updated_at'],
+            attributes: ['id', 'nome', 'tipo'], // Apenas campos necessários
             order: [['nome', 'ASC']],
         });
 
