@@ -249,16 +249,19 @@ router.post(
             // Criar a ação
             const acao = await Acao.create(acaoData);
 
-            // Vincular cursos/exames se fornecidos
+            // Vincular cursos/exames se fornecidos (BULK CREATE - muito mais rápido!)
             if (cursos_exames && Array.isArray(cursos_exames) && cursos_exames.length > 0) {
-                for (const ce of cursos_exames) {
-                    await AcaoCursoExame.create({
+                await AcaoCursoExame.bulkCreate(
+                    cursos_exames.map((ce: any) => ({
                         acao_id: acao.id,
                         curso_exame_id: ce.curso_exame_id,
                         vagas: ce.vagas,
-                    } as any);
-                }
+                    }))
+                );
             }
+
+            // Limpar cache para que a nova ação apareça imediatamente
+            await clearCache('cache:/api/acoes*');
 
             // Buscar a ação criada com os relacionamentos
             const acaoCompleta = await Acao.findByPk(acao.id, {
@@ -316,6 +319,9 @@ router.put('/:id', authenticate, authorizeAdmin, async (req: Request, res: Respo
 
         await acao.update(updateData);
 
+        // Limpar cache
+        await clearCache('cache:/api/acoes*');
+
         res.json({
             message: 'Ação atualizada com sucesso',
             acao,
@@ -358,6 +364,9 @@ router.post('/:id/cursos-exames', authenticate, authorizeAdmin, async (req: Requ
             vagas,
         } as any);
 
+        // Limpar cache
+        await clearCache('cache:/api/acoes*');
+
         res.status(201).json({
             message: 'Curso/Exame vinculado com sucesso',
             acaoCursoExame,
@@ -389,6 +398,9 @@ router.delete('/:id/cursos-exames/:cursoExameId', authenticate, authorizeAdmin, 
         }
 
         await link.destroy();
+
+        // Limpar cache
+        await clearCache('cache:/api/acoes*');
 
         res.json({ message: 'Curso/Exame desvinculado com sucesso' });
     } catch (error) {
