@@ -31,6 +31,31 @@ const Home: React.FC = () => {
         }
     };
 
+    const getAcaoTitle = (acao: any): string => {
+        // Se tem descrição preenchida, usa ela
+        if (acao.descricao && acao.descricao.trim()) {
+            return acao.descricao;
+        }
+
+        // Se tem cursos/exames vinculados, mostra o nome deles
+        if (acao.cursos_exames && acao.cursos_exames.length > 0) {
+            const nomes = acao.cursos_exames
+                .map((ce: any) => ce.curso_exame?.nome)
+                .filter((nome: string) => nome);
+
+            if (nomes.length > 0) {
+                // Se tem vários, mostra o primeiro + contador
+                if (nomes.length > 1) {
+                    return `${nomes[0]} (+${nomes.length - 1})`;
+                }
+                return nomes[0];
+            }
+        }
+
+        // Fallback genérico
+        return `Ação de ${acao.tipo === 'curso' ? 'Curso' : 'Saúde'} - ${acao.municipio}/${acao.estado}`;
+    };
+
     const handleInscreverClick = () => {
         if (isAuthenticated) {
             // Se logado, vai para a página de ações disponíveis no portal
@@ -84,7 +109,7 @@ const Home: React.FC = () => {
                                             sx={{ mb: 1 }}
                                         />
                                         <Typography variant="h6" gutterBottom>
-                                            {acao.descricao || 'Ação Educacional/Saúde'}
+                                            {getAcaoTitle(acao)}
                                         </Typography>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                             <LocationOnIcon fontSize="small" sx={{ mr: 0.5 }} />

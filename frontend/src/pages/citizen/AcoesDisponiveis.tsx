@@ -114,6 +114,31 @@ const AcoesDisponiveis: React.FC = () => {
         setAcoesFiltered(filtered);
     };
 
+    const getAcaoTitle = (acao: Acao): string => {
+        // Se tem descrição preenchida, usa ela
+        if (acao.descricao && acao.descricao.trim()) {
+            return acao.descricao;
+        }
+
+        // Se tem cursos/exames vinculados, mostra o nome deles
+        if (acao.cursos_exames && acao.cursos_exames.length > 0) {
+            const nomes = acao.cursos_exames
+                .map((ce) => ce.curso_exame?.nome)
+                .filter((nome) => nome);
+
+            if (nomes.length > 0) {
+                // Se tem vários, mostra o primeiro + contador
+                if (nomes.length > 1) {
+                    return `${nomes[0]} (+${nomes.length - 1})`;
+                }
+                return nomes[0];
+            }
+        }
+
+        // Fallback genérico
+        return `Ação de ${acao.tipo === 'curso' ? 'Curso' : 'Saúde'} - ${acao.municipio}/${acao.estado}`;
+    };
+
     const handleAbrirInscricao = (acao: Acao) => {
         setAcaoSelecionada(acao);
         setCursoSelecionado('');
@@ -209,7 +234,7 @@ const AcoesDisponiveis: React.FC = () => {
                                         sx={{ mb: 1 }}
                                     />
                                     <Typography variant="h6" gutterBottom>
-                                        {acao.descricao || 'Ação Educacional/Saúde'}
+                                        {getAcaoTitle(acao)}
                                     </Typography>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                         <LocationOn fontSize="small" sx={{ mr: 0.5 }} />
