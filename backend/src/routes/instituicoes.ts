@@ -11,7 +11,7 @@ const router = Router();
 router.get('/', authenticate, authorizeAdmin, async (_req: Request, res: Response) => {
     try {
         const instituicoes = await Instituicao.findAll({
-            attributes: ['id', 'razao_social'], // Apenas campos necessários
+            attributes: ['id', 'razao_social', 'cnpj', 'responsavel_nome', 'responsavel_email', 'responsavel_tel', 'created_at'],
             where: { ativo: true },
             order: [['razao_social', 'ASC']],
         });
