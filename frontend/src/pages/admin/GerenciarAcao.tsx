@@ -526,15 +526,23 @@ const GerenciarAcao = () => {
         try {
             if (!inscricaoSelecionada) return;
 
+            console.log('🔄 Iniciando atualização de status...', {
+                inscricaoId: inscricaoSelecionada.id,
+                novoStatus: novoStatus
+            });
+
             await api.put(`/inscricoes/${inscricaoSelecionada.id}/status`, {
                 status: novoStatus,
             });
+
+            console.log('✅ Requisição enviada com sucesso!');
 
             enqueueSnackbar('Status atualizado com sucesso!', { variant: 'success' });
             setOpenEditStatusDialog(false);
             setInscricaoSelecionada(null);
             await loadInscricoes();
         } catch (error: any) {
+            console.error('❌ Erro ao atualizar status:', error);
             enqueueSnackbar(
                 error.response?.data?.error || 'Erro ao atualizar status',
                 { variant: 'error' }

@@ -346,6 +346,8 @@ router.put('/:id/status', authenticate, authorizeAdmin, async (req: Request, res
         const { id } = req.params;
         const { status } = req.body; // 'pendente' | 'atendido' | 'faltou'
 
+        console.log('📝 Atualizando status da inscrição:', { id, status });
+
         if (!['pendente', 'atendido', 'faltou'].includes(status)) {
             res.status(400).json({ error: 'Status inválido. Use: pendente, atendido ou faltou' });
             return;
@@ -359,9 +361,11 @@ router.put('/:id/status', authenticate, authorizeAdmin, async (req: Request, res
 
         await inscricao.update({ status });
 
+        console.log('✅ Status atualizado com sucesso:', inscricao.toJSON());
+
         res.json(inscricao);
     } catch (error) {
-        console.error('Error updating inscription status:', error);
+        console.error('❌ Erro detalhado ao atualizar status da inscrição:', error);
         res.status(500).json({ error: 'Erro ao atualizar status da inscrição' });
     }
 });
