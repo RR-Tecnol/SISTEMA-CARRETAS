@@ -9,6 +9,7 @@ import { AcaoCaminhao } from '../models/AcaoCaminhao';
 import { AcaoFuncionario } from '../models/AcaoFuncionario';
 import { Inscricao } from '../models/Inscricao';
 import { authenticate, authorizeAdmin } from '../middlewares/auth';
+import { cacheMiddleware, clearCache } from '../middlewares/cache';
 import Joi from 'joi';
 import { validate } from '../middlewares/validation';
 import { Op } from 'sequelize';
@@ -42,7 +43,7 @@ const createAcaoSchema = Joi.object({
  * Listar ações (público)
  * Query params: municipio, estado, status, tipo, data_inicio, page, limit
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', cacheMiddleware(300), async (req: Request, res: Response) => {
     try {
         const { municipio, estado, status, tipo, data_inicio, page, limit } = req.query;
 
