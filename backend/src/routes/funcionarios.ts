@@ -52,6 +52,7 @@ router.put('/:id', authenticate, authorizeAdmin, validate(updateFuncionarioSchem
         await funcionario.update(req.body);
         res.json(funcionario);
     } catch (error) {
+        console.error('Erro detalhado ao atualizar funcionário:', error);
         res.status(500).json({ error: 'Erro ao atualizar funcionário' });
     }
 });

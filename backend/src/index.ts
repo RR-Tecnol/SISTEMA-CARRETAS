@@ -26,6 +26,9 @@ import abastecimentosRoutes from './routes/abastecimentos';
 
 const app: Application = express();
 
+console.log('✅ VERSÃO ATUALIZADA: 2026-02-03 20:50');
+
+
 // Security middlewares
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
