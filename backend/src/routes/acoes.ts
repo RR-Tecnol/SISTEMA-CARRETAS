@@ -263,29 +263,10 @@ router.post(
             // Limpar cache para que a nova ação apareça imediatamente
             await clearCache('cache:/api/acoes*');
 
-            // Buscar a ação criada com os relacionamentos
-            const acaoCompleta = await Acao.findByPk(acao.id, {
-                include: [
-                    {
-                        model: Instituicao,
-                        as: 'instituicao',
-                    },
-                    {
-                        model: AcaoCursoExame,
-                        as: 'cursos_exames',
-                        include: [
-                            {
-                                model: CursoExame,
-                                as: 'curso_exame',
-                            },
-                        ],
-                    },
-                ],
-            });
-
+            // Retornar a ação criada diretamente (sem query extra)
             res.status(201).json({
                 message: 'Ação criada com sucesso',
-                acao: acaoCompleta,
+                acao: acao,
             });
         } catch (error) {
             console.error('Error creating acao:', error);
