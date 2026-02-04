@@ -58,20 +58,20 @@ const MinhasInscricoes: React.FC = () => {
                             <Card>
                                 <CardContent>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                        <Typography variant="h6">{ins.acao_curso?.curso_exame?.nome}</Typography>
+                                        <Typography variant="h6">{ins.curso_exame?.nome}</Typography>
                                         <Chip label={ins.status.toUpperCase()} color={getStatusColor(ins.status) as any} size="small" />
                                     </Box>
                                     <Typography variant="body2" color="text.secondary">
-                                        Ação: {ins.acao_curso?.acao?.descricao || 'Ação Carreta'}
+                                        Ação: {ins.acao?.descricao || 'Ação Carreta'}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Local: {ins.acao_curso?.acao?.local_execucao}, {ins.acao_curso?.acao?.municipio} - {ins.acao_curso?.acao?.estado}
+                                        Local: {ins.acao?.local_execucao}, {ins.acao?.municipio} - {ins.acao?.estado}
                                     </Typography>
                                     <Divider sx={{ my: 1 }} />
                                     <Typography variant="caption" color="text.secondary">
                                         Inscrito em: {formatDate(ins.created_at)}
                                     </Typography>
-                                    {ins.compareceu && (
+                                    {ins.status === 'atendido' && (
                                         <Typography variant="body2" color="success.main" sx={{ mt: 1, fontWeight: 'bold' }}>
                                             ✓ Presença Confirmada
                                         </Typography>
