@@ -516,9 +516,7 @@ const GerenciarAcao = () => {
 
     // Helper para mapear status para exibição
     const getStatusDisplay = (inscricao: any): string => {
-        if (inscricao.compareceu === true) return 'atendido';
-        if (inscricao.compareceu === false) return 'faltou';
-        return 'pendente';
+        return inscricao.status || 'pendente';
     };
 
     // Handler para atualizar status da inscrição
