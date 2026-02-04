@@ -147,18 +147,13 @@ const Relatorios: React.FC = () => {
 
     // Dados para o gráfico de pizza (Distribuição de Atendimentos por STATUS)
     const atendimentosPorStatus = inscricoes.reduce((acc: any, inscricao: any) => {
-        let status = 'pendentes';
+        const status = inscricao.status || 'pendente';
+        const statusKey = status === 'atendido' ? 'atendidos' : status === 'faltou' ? 'faltou' : 'pendentes';
 
-        if (inscricao.compareceu === true) {
-            status = 'atendidos';
-        } else if (inscricao.compareceu === false) {
-            status = 'faltou';
+        if (!acc[statusKey]) {
+            acc[statusKey] = 0;
         }
-
-        if (!acc[status]) {
-            acc[status] = 0;
-        }
-        acc[status]++;
+        acc[statusKey]++;
         return acc;
     }, {});
 
@@ -170,12 +165,12 @@ const Relatorios: React.FC = () => {
 
     // Dados para o gráfico de rosca (Distribuição de Custos por Categoria)
     const custoPorCategoria = filteredAcoes.reduce((acc: any, acao: any) => {
-        const custoCaminhoes = acao.resumo_financeiro?.custo_caminhoes || 0;
+        const custoAbastecimentos = acao.resumo_financeiro?.custo_abastecimentos || 0;
         const custoFuncionarios = acao.resumo_financeiro?.custo_funcionarios || 0;
         const custoTotal = acao.resumo_financeiro?.custo_total || 0;
-        const outros = custoTotal - custoCaminhoes - custoFuncionarios;
+        const outros = custoTotal - custoAbastecimentos - custoFuncionarios;
 
-        acc.combustivel += custoCaminhoes;
+        acc.combustivel += custoAbastecimentos;
         acc.funcionarios += custoFuncionarios;
         acc.outros += outros > 0 ? outros : 0;
 
