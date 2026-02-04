@@ -82,7 +82,7 @@ CREATE TABLE funcionarios (
     diaria DECIMAL(10, 2),
     especialidade VARCHAR(255),
     custo_diario DECIMAL(10, 2),
-    status VARCHAR(20) NOT NULL DEFAULT 'disponivel' CHECK (status IN ('disponivel', 'em_missao', 'ferias', 'inativo')),
+    status VARCHAR(20) NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'inativo', 'disponivel', 'em_missao', 'ferias')),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
