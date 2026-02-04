@@ -40,10 +40,11 @@ const createAcaoSchema = Joi.object({
 /**
  * GET /api/acoes
  * Listar ações (público)
+ * Query params: municipio, estado, status, tipo, data_inicio, page, limit
  */
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const { municipio, estado, status, tipo, data_inicio } = req.query;
+        const { municipio, estado, status, tipo, data_inicio, page, limit } = req.query;
 
         const where: any = {};
 
@@ -57,37 +58,65 @@ router.get('/', async (req: Request, res: Response) => {
             };
         }
 
-        const acoes = await Acao.findAll({
+        // Optional pagination (backward compatible - defaults to no pagination)
+        const pageNum = page ? parseInt(page as string) : undefined;
+        const limitNum = limit ? parseInt(limit as string) : undefined;
+        const offset = pageNum && limitNum ? (pageNum - 1) * limitNum : undefined;
+
+        const queryOptions: any = {
             where,
             include: [
                 {
                     model: Instituicao,
                     as: 'instituicao',
-                    attributes: ['id', 'razao_social'],
+                    attributes: ['id', 'razao_social'], // Already optimized
                 },
                 {
                     model: AcaoCursoExame,
                     as: 'cursos_exames',
+                    attributes: ['id', 'acao_id', 'curso_exame_id', 'vagas'], // Only necessary fields
                     include: [
                         {
                             model: CursoExame,
                             as: 'curso_exame',
+                            attributes: ['id', 'nome', 'tipo'], // Only necessary fields
                         },
                     ],
                 },
                 {
                     model: Caminhao,
                     as: 'caminhoes',
+                    attributes: ['id', 'placa', 'modelo'], // Only necessary fields
                 },
                 {
                     model: Funcionario,
                     as: 'funcionarios',
+                    attributes: ['id', 'nome', 'cargo'], // Only necessary fields
                 },
             ],
             order: [['data_inicio', 'ASC']],
-        });
+        };
 
-        res.json(acoes);
+        // Add pagination if requested
+        if (limitNum) queryOptions.limit = limitNum;
+        if (offset !== undefined) queryOptions.offset = offset;
+
+        // Use findAndCountAll if pagination is requested, otherwise findAll
+        if (pageNum && limitNum) {
+            const { count, rows: acoes } = await Acao.findAndCountAll(queryOptions);
+            res.json({
+                acoes,
+                pagination: {
+                    total: count,
+                    page: pageNum,
+                    limit: limitNum,
+                    totalPages: Math.ceil(count / limitNum),
+                },
+            });
+        } else {
+            const acoes = await Acao.findAll(queryOptions);
+            res.json(acoes);
+        }
     } catch (error: any) {
         console.error('❌ ERRO GET ACOES:', error);
         res.status(500).json({ error: 'Erro ao buscar ações' });
