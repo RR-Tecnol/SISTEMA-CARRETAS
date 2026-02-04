@@ -1550,15 +1550,15 @@ const GerenciarAcao = () => {
                                         ) : (
                                             funcionariosAcao.map((af: any) => (
                                                 <TableRow key={af.id}>
-                                                    <TableCell>{af.funcionario?.nome || 'N/A'}</TableCell>
-                                                    <TableCell>{af.funcionario?.cargo || 'N/A'}</TableCell>
-                                                    <TableCell>{af.funcionario?.especialidade || '-'}</TableCell>
-                                                    <TableCell>R$ {Number(af.funcionario?.custo_diario || 0).toFixed(2)}</TableCell>
+                                                    <TableCell>{af.nome || 'N/A'}</TableCell>
+                                                    <TableCell>{af.cargo || 'N/A'}</TableCell>
+                                                    <TableCell>{af.especialidade || '-'}</TableCell>
+                                                    <TableCell>R$ {Number(af.custo_diario || 0).toFixed(2)}</TableCell>
                                                     <TableCell align="center">
                                                         <IconButton
                                                             color="error"
                                                             size="small"
-                                                            onClick={() => handleRemoveFuncionario(af.funcionario_id)}
+                                                            onClick={() => handleRemoveFuncionario(af.id)}
                                                             title="Remover funcionário"
                                                         >
                                                             <DeleteIcon />
