@@ -95,7 +95,7 @@ router.get('/', cacheMiddleware(300), async (req: Request, res: Response) => {
                     attributes: ['id', 'nome', 'cargo'], // Only necessary fields
                 },
             ],
-            order: [['numero_acao', 'DESC']], // Mais recentes primeiro
+            order: [['numero_acao', 'ASC']], // Do menor para o maior
         };
 
         // Add pagination if requested
